@@ -253,8 +253,10 @@ class Attention(torch.nn.Module):
         if mode and hasattr(self, 'ab'):
             del self.ab
         else:
+            # gfx803 fix: indexing on GPU may cause "invalid device function"
+            # Move to CPU for indexing and then back to device
             self.register_buffer('ab',
-                                 self.attention_biases[:, self.attention_bias_idxs],
+                                 self.attention_biases.cpu()[:, self.attention_bias_idxs.cpu()].to(self.attention_biases.device),
                                  persistent=False)
 
     def forward(self, x):  # x (B,N,C)
@@ -275,7 +277,7 @@ class Attention(torch.nn.Module):
         attn = (
             (q @ k.transpose(-2, -1)) * self.scale
             +
-            (self.attention_biases[:, self.attention_bias_idxs]
+            (self.attention_biases.cpu()[:, self.attention_bias_idxs.cpu()].to(self.attention_biases.device)
              if self.training else self.ab)
         )
         attn = attn.softmax(dim=-1)

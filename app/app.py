@@ -10,7 +10,10 @@ from utils.tools_gradio import fast_process
 
 # Most of our demo code is from [FastSAM Demo](https://huggingface.co/spaces/An-619/FastSAM). Huge thanks for AN-619.
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# gfx803 fix: Force computation to CPU because AMD RX 580 (gfx803) lacks 
+# pre-compiled rocBLAS matrix multiplication kernels in PyTorch 2.3.1 (rocm5.7),
+# which leads to Core Dumps (Exit code 134) during inference.
+device = torch.device("cpu")
 
 # Load the pre-trained model
 sam_checkpoint = "../weights/mobile_sam.pt"

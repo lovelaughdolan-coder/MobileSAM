@@ -54,8 +54,11 @@ class SamPredictor:
 
         # Transform the image to the form expected by the model
         input_image = self.transform.apply_image(image)
-        input_image_torch = torch.as_tensor(input_image, device=self.device)
+        # gfx803 fix: Perform permute and contiguous on CPU first to avoid HIP errors,
+        # then move the tensor to the target device.
+        input_image_torch = torch.as_tensor(input_image)
         input_image_torch = input_image_torch.permute(2, 0, 1).contiguous()[None, :, :, :]
+        input_image_torch = input_image_torch.to(device=self.device)
 
         self.set_torch_image(input_image_torch, image.shape[:2])
 

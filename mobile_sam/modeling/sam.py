@@ -164,12 +164,18 @@ class Sam(nn.Module):
 
     def preprocess(self, x: torch.Tensor) -> torch.Tensor:
         """Normalize pixel values and pad to a square input."""
+        # gfx803 fix: Perform preprocessing on CPU to avoid invalid device function on AMD GPUs
+        original_device = x.device
+        x_cpu = x.cpu()
+        mean_cpu = self.pixel_mean.cpu()
+        std_cpu = self.pixel_std.cpu()
+
         # Normalize colors
-        x = (x - self.pixel_mean) / self.pixel_std
+        x_cpu = (x_cpu - mean_cpu) / std_cpu
 
         # Pad
-        h, w = x.shape[-2:]
+        h, w = x_cpu.shape[-2:]
         padh = self.image_encoder.img_size - h
         padw = self.image_encoder.img_size - w
-        x = F.pad(x, (0, padw, 0, padh))
-        return x
+        x_cpu = F.pad(x_cpu, (0, padw, 0, padh))
+        return x_cpu.to(original_device)
